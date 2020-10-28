@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.17)
 project(net_exp)
 
 #set(CMAKE_C_STANDARD 99)
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE "Debug")
 
 #设置安装目录
@@ -30,6 +30,7 @@ include_directories(SYSTEM
         )
 add_static_lib(event)
 
+add_subdirectory(source/common)
 add_subdirectory(source/exe)
 add_subdirectory(source/tcp)
 add_subdirectory(test/event)

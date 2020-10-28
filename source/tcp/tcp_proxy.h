@@ -8,6 +8,9 @@
 #include <sys/socket.h>
 #include <event.h>
 
+#include <memory>
+#include <functional>
+
 /**
  * tcp 代理代理链接描述信息
  * */
@@ -40,8 +43,39 @@ public:
 };
 
 class TcpProxy{
-    TcpProxyConnection proxyConnection;
 
+public:
+    std::unique_ptr<TcpProxyConnection> proxyConnection;
+    bufferevent *b_out, *b_in;
+    // 适用的分发器
+    std::shared_ptr<event_base> base;
+
+    TcpProxy();
+    ~TcpProxy();
+
+    /**
+     * 与目标段建立网络链接
+     * */
+
+
+    /**
+     * 设置默认相关回调函数
+     * */
+     // 如何接受新链接
+     typedef bool (*accept_cb)(evutil_socket_t fd, sockaddr *a, int slen, void *p);
+    accept_cb accept_source_connection;
+    bufferevent_data_cb readcb;
+    bufferevent_data_cb writecb;
+    bufferevent_event_cb eventcb;
+
+private:
+    /**
+     * 默认的回调函数
+     * */
+    void default_read_cb(bufferevent *bev, void *ctx);
+    void default_write_cb(bufferevent *bev, void *ctx);
+    void default_event_cb(bufferevent *bev, short what, void *ctx);
+    void default_accept_cb(evutil_socket_t fd, sockaddr *a, int slen, void *p);
 };
 
 #endif //NET_EXP_TCP_PROXY_H
