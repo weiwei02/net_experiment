@@ -93,8 +93,10 @@ static void drained_writecb(struct bufferevent *bev, void *ctx) {
         bufferevent_enable(partner, EV_READ);
 }
 
-static void
-close_on_finished_writecb(struct bufferevent *bev, void *ctx) {
+/**
+ * 写数据完成后关闭链接
+ * */
+static void close_on_finished_writecb(struct bufferevent *bev, void *ctx) {
     struct evbuffer *b = bufferevent_get_output(bev);
 
     if (evbuffer_get_length(b) == 0) {
@@ -102,6 +104,9 @@ close_on_finished_writecb(struct bufferevent *bev, void *ctx) {
     }
 }
 
+/**
+ * 接收事件时的回调函数
+ * */
 static void
 eventcb(struct bufferevent *bev, short what, void *ctx) {
     struct bufferevent *partner = (struct bufferevent *) ctx;
@@ -156,6 +161,9 @@ syntax(void) {
     exit(1);
 }
 
+/**
+ * 接收网络链接回调
+ * */
 static void
 accept_cb(struct evconnlistener *listener, evutil_socket_t fd,
           struct sockaddr *a, int slen, void *p) {
