@@ -10,6 +10,8 @@
 
 #include <memory>
 #include <functional>
+#include <map>
+#include "../common/concurrency/IoContext.h"
 
 /**
  * tcp 代理代理链接描述信息
@@ -49,8 +51,11 @@ public:
     bufferevent *b_out, *b_in;
     // 适用的分发器
     std::shared_ptr<event_base> base;
+    std::shared_ptr<IoContext> ioContext;
+    // 对象唯一编号
+//    int64_t code;
 
-    TcpProxy();
+    TcpProxy(std::shared_ptr<IoContext>& ioContext);
     ~TcpProxy();
 
     /**
@@ -61,9 +66,7 @@ public:
     /**
      * 设置默认相关回调函数
      * */
-     // 如何接受新链接
-     typedef bool (*accept_cb)(evutil_socket_t fd, sockaddr *a, int slen, void *p);
-    accept_cb accept_source_connection;
+    IoContext::accept_cb accept_source_connection;
     bufferevent_data_cb readcb;
     bufferevent_data_cb writecb;
     bufferevent_event_cb eventcb;
@@ -78,4 +81,13 @@ private:
     void default_accept_cb(evutil_socket_t fd, sockaddr *a, int slen, void *p);
 };
 
+class TcpProxyHolder{
+private:
+    std::map<int64_t , std::unique_ptr<TcpProxy>> hmap;
+    int64_t index = 0;
+public:
+    void append(std::unique_ptr<TcpProxy>&&);
+    // todo 注意线程安全
+    void remove(int64_t i);
+};
 #endif //NET_EXP_TCP_PROXY_H

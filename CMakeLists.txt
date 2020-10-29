@@ -27,6 +27,7 @@ endfunction()
 #SET(CMAKE_MODULE_PATH ${CMAKE_ROOT}/Modules ${CMAKE_SOURCE_DIR}/cmake/modules)
 include_directories(SYSTEM
         ${PROJECT_SOURCE_DIR}/lib/libevent
+        ${PROJECT_SOURCE_DIR}/source
         )
 add_static_lib(event)
 
@@ -34,3 +35,4 @@ add_subdirectory(source/common)
 add_subdirectory(source/exe)
 add_subdirectory(source/tcp)
 add_subdirectory(test/event)
+add_subdirectory(test/tcp)
