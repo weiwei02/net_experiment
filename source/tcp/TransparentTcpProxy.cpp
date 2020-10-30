@@ -8,6 +8,10 @@
 //输出缓冲区最大空间
 static const int MAX_OUTPUT = 4 * 1024 * 1024;
 
+static void free_proxy(TransparentTcpProxy* proxy){
+    delete (proxy->partner);
+    delete (proxy);
+}
 static void _drained_writecb(struct bufferevent *bev, void *ctx);
 
 static void _eventcb(struct bufferevent *bev, short what, void *ctx);
@@ -22,6 +26,7 @@ static void _readcb(struct bufferevent *bev, void *ctx) {
     // 对端为空，应排空缓冲区后释放连接
     if (!partner->buffer) {
         evbuffer_drain(src, len);
+        free_proxy(partner);
         return;
     }
     dst = bufferevent_get_output(partner->buffer);
@@ -56,16 +61,22 @@ static void _drained_writecb(struct bufferevent *bev, void *ctx) {
 
 // close connection when finnish write
 static void __close_on_finished_writecb(struct bufferevent *bev, void *ctx) {
+    auto partner = static_cast<TransparentTcpProxy *>(ctx);
     struct evbuffer *b = bufferevent_get_output(bev);
 
     if (evbuffer_get_length(b) == 0) {
-        bufferevent_free(bev);
+        delete partner;
+//        bufferevent_free(bev);
     }
 }
 
 static void
 _eventcb(struct bufferevent *bev, short what, void *ctx) {
     auto partner = static_cast<TransparentTcpProxy *>(ctx);
+    TransparentTcpProxy * p2;
+    if (partner){
+        p2 = partner->partner;
+    }
 
     if (what & (BEV_EVENT_EOF | BEV_EVENT_ERROR)) {
         if (what & BEV_EVENT_ERROR) {
@@ -84,15 +95,15 @@ _eventcb(struct bufferevent *bev, short what, void *ctx) {
                  * side. */
                 bufferevent_setcb(partner->buffer,
                                   NULL, __close_on_finished_writecb,
-                                  _eventcb, NULL);
+                                  _eventcb, partner);
                 bufferevent_disable(partner->buffer, EV_READ);
             } else {
                 /* We have nothing left to say to the other
                  * side; close it. */
-                bufferevent_free(partner->buffer);
+                delete partner;
             }
         }
-        bufferevent_free(bev);
+        delete p2;
     }
 }
 
@@ -114,7 +125,7 @@ bool TransparentTcpProxy::default_accept_cb(int fd, sockaddr *a, int slen, void 
     }
     start();
     partner->start();
-    return false;
+    return true;
 }
 
 TransparentTcpProxy* TransparentTcpProxy::init_transparent_partner(TransparentTcpProxy *p) {
@@ -149,7 +160,7 @@ bool TransparentTcpProxy::connect_to_upstream() {
 }
 
 void TransparentTcpProxy::start() {
-    bufferevent_setcb(buffer, _readcb, NULL,_eventcb , partner);
+    bufferevent_setcb(buffer, _readcb, nullptr,_eventcb , partner);
 }
 
 

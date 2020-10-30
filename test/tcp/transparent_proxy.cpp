@@ -3,22 +3,23 @@
 //
 
 #include <memory>
-#include <tcp/tcp_proxy.h>
+#include <tcp/TransparentTcpProxy.h>
 #include "common/concurrency/IoContext.h"
 #include <map>
 
 int main(int argc, char **argv){
-    auto hold = std::make_shared<TcpProxyHolder>();
     auto ioContext = std::make_shared<IoContext>(1);
-    ioContext->listen("0.0.0.0:49913", [&ioContext,hold](evutil_socket_t fd,
+    auto serverStr = "0.0.0.0:49913";
+    ioContext->listen(serverStr, [&ioContext](evutil_socket_t fd,
                              struct sockaddr *a, int slen, void *){
-        auto proxy = std::make_unique<TcpProxy>(ioContext);
-
-        // 接收新的外部连接
-        if (proxy->accept_source_connection(fd, a, slen, nullptr)){
-            hold->append(std::move(proxy));
+        auto proxy = new TransparentTcpProxy(ioContext);
+        if (!proxy->default_accept_cb(fd, a, slen, nullptr)){
+            delete proxy->partner;
+            delete proxy;
+            return false;
         }
-
         return true;
     });
+    printf("server listen %s\n", serverStr);
+    ioContext->dispatch();
 }
