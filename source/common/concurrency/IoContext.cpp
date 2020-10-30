@@ -85,7 +85,7 @@ int IoContext::listen(const std::string &address_str, IoContext::accept_cb cb) {
 
 
     auto listener = evconnlistener_new_bind(this->main_base(), __evconnlistener_cb,
-                                            this, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_CLOSE_ON_EXEC | LEV_OPT_REUSEABLE,
+                                            this, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_CLOSE_ON_EXEC | LEV_OPT_REUSEABLE | LEV_OPT_LEAVE_SOCKETS_BLOCKING,
                                             -1, (struct sockaddr *) &listen_on_addr, socklen);
 
     if (!listener) {
