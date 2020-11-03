@@ -1,3 +1,6 @@
 
 add_executable(transparent_proxy transparent_proxy.cpp)
 target_link_libraries(transparent_proxy t_proxy)
+
+add_executable(load_client load_client.cpp)
+target_link_libraries(load_client event)
