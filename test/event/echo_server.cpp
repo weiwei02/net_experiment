@@ -7,12 +7,13 @@
 #include <cstring>
 
 #include <errno.h>
+#include <arpa/inet.h>
 
 #include "event.h"
 #include "event2/bufferevent.h"
 
 using namespace std;
-
+static int MAX_OUTPUT = 4 * 1024 * 1024;
 int tcp_server_init2(int);
 void accept_cb2(int fd, short events, void *arg);
 void sockert_read_cb2(struct bufferevent *bev, void *arg);
@@ -36,7 +37,7 @@ int buffer_server(int port){
 }
 
 int main(){
-    buffer_server(8899);
+    buffer_server(5000);
 }
 
 /**
@@ -51,7 +52,12 @@ void accept_cb2(int fd, short events, void *arg){
     evutil_make_socket_nonblocking(sockfd);
 //    cout << "accept a client " << sockfd << endl;
     struct event_base* base = (event_base*)arg;
-
+    sockaddr_in sa;
+    socklen_t len2 = sizeof(sa);
+    if(!getpeername(sockfd, (struct sockaddr *)&sa, &len2))
+    {
+        printf("accept new connect ,fd is %d, %s:%d\n", sockfd, inet_ntoa(sa.sin_addr),ntohs(sa.sin_port) );
+    }
     bufferevent* bev = bufferevent_socket_new(base, sockfd, BEV_OPT_CLOSE_ON_FREE);
     /*bufferevent_setcb()函数修改 bufferevent 的一个或者多个回调 。
     readcb、writecb和eventcb函数将分别在已经读取足够的数据 、已经写入足够的数据 ,或者发生错误时被调用 。
@@ -63,14 +69,30 @@ void accept_cb2(int fd, short events, void *arg){
 
     bufferevent_enable(bev, EV_READ | EV_PERSIST);
 }
+static void
+drained_writecb(struct bufferevent *bev, void *ctx)
+{
+    /* We were choking the other side until we drained our outbuf a bit.
+     * Now it seems drained. */
+    bufferevent_setcb(bev, sockert_read_cb2, NULL, event_cb2, nullptr);
+    bufferevent_setwatermark(bev, EV_WRITE, 0, 0);
+    bufferevent_enable(bev, EV_READ);
 
+}
 void sockert_read_cb2(struct bufferevent *bev, void *arg){
-    char msg[4096];
-    size_t len = bufferevent_read(bev, msg, sizeof(msg));
-    msg[len] = '\0';
-
-    cout << endl << msg << endl;
-    bufferevent_write(bev, msg, len);
+    auto src = bufferevent_get_input(bev);
+    auto dst = bufferevent_get_output(bev);
+    evbuffer_add_buffer(dst, src);
+    if (evbuffer_get_length(dst) >= MAX_OUTPUT) {
+        /* We're giving the other side data faster than it can
+         * pass it on.  Stop reading here until we have drained the
+         * other side to MAX_OUTPUT/2 bytes. */
+        bufferevent_setcb(bev, nullptr, drained_writecb,
+                          event_cb2, bev);
+        bufferevent_setwatermark(bev, EV_WRITE, MAX_OUTPUT/2,
+                                 MAX_OUTPUT);
+        bufferevent_disable(bev, EV_READ);
+    }
 }
 
 void event_cb2(struct bufferevent *bev, short event, void *arg){

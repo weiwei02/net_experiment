@@ -61,4 +61,14 @@ private:
     void setnonblocking(int fd);
 };
 
+class SpliceEchoHandler : public Handler{
+public:
+    SpliceEchoHandler();
+    ~SpliceEchoHandler();
+    virtual int handle(epoll_event e) override;
+private:
+    int received = 0;
+    int pipefd[2];
+};
+
 #endif //NET_EXP_EPOLL_HANDLER_H
