@@ -4,6 +4,8 @@
 
 #include <arpa/inet.h>
 #include "TransparentTcpProxy.h"
+#include<linux/netfilter_ipv4.h>
+#include <errno.h>
 
 //输出缓冲区最大空间
 static const int MAX_OUTPUT = 4 * 1024 * 1024;
@@ -109,6 +111,7 @@ _eventcb(struct bufferevent *bev, short what, void *ctx) {
 
 TransparentTcpProxy::TransparentTcpProxy(std::shared_ptr<IoContext> &ioContext):ioContext(ioContext) {
     base = ioContext->io_base();
+    src_len = sizeof(addr);
 }
 
 bool TransparentTcpProxy::default_accept_cb(int fd, sockaddr *a, int slen, void *p) {
@@ -117,7 +120,7 @@ bool TransparentTcpProxy::default_accept_cb(int fd, sockaddr *a, int slen, void 
     this->src_len = slen;
     // io 进出使用不同的调度
     buffer = bufferevent_socket_new(base, fd,BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
-    if (!init_transparent_partner(this)){
+    if (! init_transparent_partner(this)){
         return false;
     }
     if (!connect_to_upstream()){
@@ -137,12 +140,19 @@ TransparentTcpProxy* TransparentTcpProxy::init_transparent_partner(TransparentTc
 
     // get origin dest ，it mean use iptables
     auto addr2 = (sockaddr_in *) &partner->addr;
-    if( getsockopt(fd, SOL_SOCKET, IP_ORIGDSTADDR, addr2, &partner->src_len) == 0){
+    if(getsockopt(fd, SOL_IP, SO_ORIGINAL_DST, addr2, &partner->src_len) == 0){
         char ip[20];
         printf("transparent_proxy : origin dest connection[%s:%d]\n", inet_ntop(AF_INET, &addr2->sin_addr, ip, sizeof(ip)), ntohs(addr2->sin_port));
+    } else{
+        // tproxy
+        if(getsockopt(fd, SOL_SOCKET, IP_ORIGDSTADDR, addr2, &partner->src_len) == 0 && ntohs(addr2->sin_port) > 0){
+            char ip[20];
+            printf("origin dest connection[%s:%d]\n", inet_ntop(AF_INET, &addr2->sin_addr, ip, sizeof(ip)), ntohs(addr2->sin_port));
+        } else{
+            printf ("error getting original destination address.%d\n", errno);
+            return nullptr;
+        }
     }
-
-
     return partner;
 }
 

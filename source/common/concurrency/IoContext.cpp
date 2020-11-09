@@ -9,7 +9,7 @@
 #include <event2/listener.h>
 #include <memory>
 
-IoContext::IoContext(int threads) {
+IoContext::IoContext(int threads) :threads(threads){
     base_array = new event_base *[threads];
     for (int i = 0; i < threads; ++i) {
         base_array[i] = event_base_new();
