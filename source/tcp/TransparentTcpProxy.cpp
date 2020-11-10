@@ -123,7 +123,7 @@ bool TransparentTcpProxy::default_accept_cb(int fd, sockaddr *a, int slen, void 
     if (! init_transparent_partner(this)){
         return false;
     }
-    if (!connect_to_upstream()){
+    if (!partner->connect_to_upstream()){
         return false;
     }
     start();
@@ -159,7 +159,7 @@ TransparentTcpProxy* TransparentTcpProxy::init_transparent_partner(TransparentTc
 bool TransparentTcpProxy::connect_to_upstream() {
     buffer = bufferevent_socket_new(base, -1,
                                              BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
-    if (bufferevent_socket_connect(partner->buffer,
+    if (bufferevent_socket_connect(buffer,
                                    (struct sockaddr *) &addr, src_len) < 0) {
         perror("bufferevent_socket_connect error");
         return false;
@@ -171,6 +171,7 @@ bool TransparentTcpProxy::connect_to_upstream() {
 
 void TransparentTcpProxy::start() {
     bufferevent_setcb(buffer, _readcb, nullptr,_eventcb , partner);
+    bufferevent_enable(buffer, EV_READ|EV_WRITE);
 }
 
 

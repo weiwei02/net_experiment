@@ -65,6 +65,7 @@ void IOLoop::removeHandler(int fd)
     delete handler;
     //将fd从epoll堆删除
     epoll_ctl(epfd_, EPOLL_CTL_DEL, fd, NULL);
+    close(fd);
 }
 
 IOLoop::IOLoop()
