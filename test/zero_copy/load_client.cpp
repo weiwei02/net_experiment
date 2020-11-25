@@ -83,6 +83,7 @@ void *init_client(void*){
  * load_client 127.0.0.1:5000 300
  * @1 服务端地址
  * @2 压测时间
+ * yonghu
  * */
 int main(int argc, char** argv){
     assert(argc >= 3);

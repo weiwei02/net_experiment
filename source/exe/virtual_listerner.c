@@ -71,7 +71,7 @@ int main(int argc, char **argv)
     my_events = malloc(sizeof(struct epoll_event) * EPOLL_MAX_NUM);
 
 
-    while () {
+    while (1) {
         // epoll wait
         int active_fds_cnt = epoll_wait(epfd, my_events, EPOLL_MAX_NUM, -1);
         int i = 0;

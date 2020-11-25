@@ -62,7 +62,6 @@ static void _ev_event_cb(struct bufferevent *bev, short what, void *c){
                 bufferevent_free(partner);
             }
         }
-        ctx->proxy
         bufferevent_free(bev);
     }
 }
