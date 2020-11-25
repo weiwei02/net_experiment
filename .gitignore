@@ -1,0 +1,17 @@
+/cmake-build-debug/
+/build/
+/install/
+/bazel-testlogs/
+/bazel-out/
+/bazel-c_plus_tm/
+/.clwb/
+/bazel-bin/
+.vscode/c_cpp_properties.json
+.idea/workspace.xml
+.vscode/launch.json
+.vscode/settings.json
+.vscode/tasks.json
+.DS_Store
+target
+Cargo.lock
+main

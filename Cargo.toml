@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "rnet"
+]
+authors = ["weiwei3.wang <weiwei3.wang@ly.com>"]
